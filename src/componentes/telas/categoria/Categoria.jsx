@@ -4,6 +4,7 @@ import { getCategoriasAPI, getCategoriaPorCodigoAPI,
 deleteCategoriaAPI, cadastraCategoriaAPI } from "../../../servicos/CategoriaServico";
 import Tabela from "./Tabela";
 import Form from "./Form";
+import Carregando from "../../comuns/Carregando"
 
 function Categoria(){
 
@@ -11,6 +12,7 @@ function Categoria(){
     const [listaObjetos, setListaObjetos] = useState([]);
     const [editar, setEditar] = useState(false);
     const [objeto, setObjeto] = useState({ codigo : "", nome : ""});
+    const [carregando, setCarregando] = useState(false)
 
     const novoObjeto = () => {
         setEditar(false);
@@ -50,7 +52,9 @@ function Categoria(){
     }
 
     const recuperaCategorias = async () => {
+        setCarregando(true);
         setListaObjetos(await getCategoriasAPI());
+        setCarregando(false);
     }
 
     const remover = async codigo => {
@@ -70,8 +74,10 @@ function Categoria(){
             alerta, listaObjetos, remover,
             objeto, acaoCadastrar, handleChange, novoObjeto, editarObjeto
         }}>
-            <Tabela/>
-            <Form/>
+            <Carregando carregando={carregando}>
+                <Tabela />
+            </Carregando>
+            <Form />
         </CategoriaContext.Provider>
     )
 
