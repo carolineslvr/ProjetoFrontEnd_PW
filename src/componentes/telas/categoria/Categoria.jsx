@@ -1,32 +1,42 @@
 import { useState, useEffect } from "react";
 import CategoriaContext from "./CategoriaContext";
-import { getCategoriasAPI, getCategoriaPorCodigoAPI, 
-deleteCategoriaAPI, cadastraCategoriaAPI } from "../../../servicos/CategoriaServico";
+import {
+    getCategoriasAPI, getCategoriaPorCodigoAPI,
+    deleteCategoriaAPI, cadastraCategoriaAPI
+} from "../../../servicos/CategoriaServico";
 import Tabela from "./Tabela";
 import Form from "./Form";
-import Carregando from "../../comuns/Carregando"
+import Carregando from "../../comuns/Carregando";
+import WithAuth from "../../../seguranca/WithAuth";
+import { useNavigate } from "react-router-dom";
 
-function Categoria(){
+function Categoria() {
 
-    const [alerta, setAlerta] = useState({ status : "", message : ""});
+    let navigate = useNavigate();
+
+    const [alerta, setAlerta] = useState({ status: "", message: "" });
     const [listaObjetos, setListaObjetos] = useState([]);
     const [editar, setEditar] = useState(false);
-    const [objeto, setObjeto] = useState({ codigo : "", nome : ""});
-    const [carregando, setCarregando] = useState(false)
+    const [objeto, setObjeto] = useState({ codigo: "", nome: "" });
 
     const novoObjeto = () => {
         setEditar(false);
-        setAlerta({status : "", message : ""});
+        setAlerta({ status: "", message: "" });
         setObjeto({
-            codigo : 0, 
-            nome : ""
+            codigo: 0,
+            nome: ""
         });
     }
 
     const editarObjeto = async codigo => {
-        setObjeto(await getCategoriaPorCodigoAPI(codigo));
-        setEditar(true);
-        setAlerta({status : "", message :""});
+        try {
+            setObjeto(await getCategoriaPorCodigoAPI(codigo));
+            setEditar(true);
+            setAlerta({ status: "", message: "" });
+        } catch (err) {
+            window.location.reload();
+            navigate("login", { replace: true });
+        }
     }
 
     const acaoCadastrar = async e => {
@@ -34,13 +44,14 @@ function Categoria(){
         const metodo = editar ? "PUT" : "POST";
         try {
             let retornoAPI = await cadastraCategoriaAPI(objeto, metodo);
-            setAlerta({status : retornoAPI.status, message : retornoAPI.message});
+            setAlerta({ status: retornoAPI.status, message: retornoAPI.message });
             setObjeto(retornoAPI.objeto);
-            if (!editar){
+            if (!editar) {
                 setEditar(true);
             }
         } catch (err) {
-            console.log(err);
+            window.location.reload();
+            navigate("login", { replace: true });
         }
         recuperaCategorias();
     }
@@ -48,26 +59,38 @@ function Categoria(){
     const handleChange = (e) => {
         const name = e.target.name;
         const value = e.target.value;
-        setObjeto({...objeto, [name] : value});
+        setObjeto({ ...objeto, [name]: value });
     }
+
+    const [carregando, setCarregando] = useState(false);
 
     const recuperaCategorias = async () => {
-        setCarregando(true);
-        setListaObjetos(await getCategoriasAPI());
-        setCarregando(false);
-    }
-
-    const remover = async codigo => {
-        if (window.confirm('Deseja remover este objeto?')){
-            let retornoAPI = await deleteCategoriaAPI(codigo);
-            setAlerta({ status : retornoAPI.status, message : retornoAPI.message});
-            recuperaCategorias();
+        try {
+            setCarregando(true);
+            setListaObjetos(await getCategoriasAPI());
+            setCarregando(false);
+        } catch (err) {
+            window.location.reload();
+            navigate("login", { replace: true });
         }
     }
 
-    useEffect(()=>{
+    const remover = async codigo => {
+        if (window.confirm('Deseja remover este objeto?')) {
+            try {
+                let retornoAPI = await deleteCategoriaAPI(codigo);
+                setAlerta({ status: retornoAPI.status, message: retornoAPI.message });
+                recuperaCategorias();
+            } catch (err) {
+                window.location.reload();
+                navigate("login", { replace: true });
+            }
+        }
+    }
+
+    useEffect(() => {
         recuperaCategorias();
-    },[]);
+    }, []);
 
     return (
         <CategoriaContext.Provider value={{
@@ -85,4 +108,4 @@ function Categoria(){
 
 }
 
-export default Categoria;
+export default WithAuth(Categoria);
